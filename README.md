@@ -15,6 +15,10 @@ The platform combines **AI-powered incident prioritization, traffic analytics, g
 
 > **One City. One Intelligence Layer. Smarter Decisions. Faster Response.**
 
+## 🎥 Demo Video
+
+[▶️ Watch the UrbanGuard AI Demo]([https://drive.google.com/file/d/1aHIdVsu9-pSfO8Y5M9Ksz8m-qTbdjA4G/view?usp=drivesdk])
+
 ---
 
 ## 🌆 Problem
