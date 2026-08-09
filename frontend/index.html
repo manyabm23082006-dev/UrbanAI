@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UrbanAI — Smart Urban Traffic & Infrastructure Platform</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css?v=2.0">
+</head>
+<body>
+
+<div id="AUTH">
+  <div class="acard" style="width:460px">
+    <div class="abrand">
+      <div class="abicon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+      <div class="abname">Urban<b>AI</b></div>
+    </div>
+    <p class="asub">Smart Traffic &amp; Infrastructure Platform</p>
+    <div class="atabs" style="flex-wrap:wrap">
+      <div class="atab on" onclick="portalTab('citizen')" style="flex-basis:31%">🚗 Citizen</div>
+      <div class="atab" onclick="portalTab('traffic')" style="flex-basis:31%">🚓 Traffic Control</div>
+      <div class="atab" onclick="portalTab('emergency')" style="flex-basis:31%">🚑 Medical Emergency</div>
+      <div class="atab" onclick="portalTab('municipality')" style="flex-basis:48%;margin-top:4px">🏗️ Municipality</div>
+      <div class="atab" onclick="portalTab('admin')" style="flex-basis:48%;margin-top:4px">🏛️ Super Admin</div>
+    </div>
+    <div class="aerr" id="aerr"></div>
+
+    <!-- CITIZEN PORTAL -->
+    <div id="portal-citizen">
+      <div class="atabs" style="margin-bottom:16px">
+        <div class="atab on" onclick="aTab('login')">Sign In</div>
+        <div class="atab" onclick="aTab('signup')">Register</div>
+      </div>
+      <div id="lf">
+        <div class="af"><label>UrbanGuard ID</label><input id="le" placeholder="UG-2026-KA-000001" value="UG-2026-KA-000001"></div>
+        <div class="af"><label>Password</label><input id="lp" type="password" placeholder="••••••••" value="demo1234"></div>
+        <button class="abtn" onclick="doLogin()">Access Dashboard →</button>
+        <div class="ahint">Demo citizen pre-filled · <a onclick="doLogin()">click to enter</a></div>
+      </div>
+      <div id="sf" style="display:none">
+        <!-- Step progress -->
+        <div style="display:flex;gap:6px;margin-bottom:18px" id="reg-step-dots">
+          <div class="reg-dot on" data-step="1"></div>
+          <div class="reg-dot" data-step="2"></div>
+          <div class="reg-dot" data-step="3"></div>
+          <div class="reg-dot" data-step="4"></div>
+        </div>
+
+        <!-- STEP 1: Identification -->
+        <div class="reg-step" id="reg-step-1">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Step 1 of 4 — Your Details</div>
+          <div class="af"><label>Full Name</label><input id="sn" placeholder="Your Name"></div>
+          <div class="af"><label>Mobile Number</label><input id="s-mobile" placeholder="10-digit mobile number" oninput="clearAvail('mobile')" onblur="checkAvail('mobile')"><div class="reg-avail-msg" id="avail-mobile"></div></div>
+          <div class="af"><label>Email (optional)</label><input id="se" type="email" placeholder="you@example.com" oninput="clearAvail('email')" onblur="checkAvail('email')"><div class="reg-avail-msg" id="avail-email"></div></div>
+          <div class="af"><label>Date of Birth</label><input id="s-dob" type="date"></div>
+          <div class="af"><label>Gender</label><select id="s-gender"><option value="">Prefer not to say</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+          <div class="af"><label>Address</label><input id="s-address" placeholder="House no., street, area"></div>
+          <div class="af"><label>State</label><input id="s-state" placeholder="e.g. Karnataka"></div>
+          <div class="af"><label>District</label><input id="s-district" placeholder="e.g. Bengaluru Urban"></div>
+          <div class="af"><label>PIN Code</label><input id="s-pincode" placeholder="6-digit PIN code"></div>
+          <button class="abtn" onclick="regGoStep(2)">Continue to Mobile Verification →</button>
+        </div>
+
+        <!-- STEP 2: OTP verification -->
+        <div class="reg-step" id="reg-step-2" style="display:none">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:4px">Step 2 of 4 — Verify Your Mobile Number</div>
+          <p style="font-size:11px;color:var(--text2);margin-bottom:14px">We'll send a 6-digit code to <b id="reg-otp-phone-display">your number</b>.</p>
+          <div id="reg-otp-send-box">
+            <button class="abtn" onclick="regSendOtp()" id="reg-send-otp-btn">Send Verification Code</button>
+          </div>
+          <div id="reg-otp-verify-box" style="display:none">
+            <div class="af"><label>Enter Code</label><input id="reg-otp-code" placeholder="6-digit code" maxlength="6" style="letter-spacing:4px;font-size:18px;text-align:center"></div>
+            <div id="reg-otp-msg" style="font-size:11px;margin-bottom:10px"></div>
+            <button class="abtn" onclick="regVerifyOtp()">Verify Code</button>
+            <div class="ahint"><a onclick="regSendOtp()" id="reg-resend-link">Resend code</a></div>
+          </div>
+          <div class="ahint" style="margin-top:14px"><a onclick="regGoStep(1)">← Back</a> &nbsp;·&nbsp; <a onclick="regSkipOtp()">Skip for now</a></div>
+        </div>
+
+        <!-- STEP 3: Government ID -->
+        <div class="reg-step" id="reg-step-3" style="display:none">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Step 3 of 4 — Government ID</div>
+          <div class="af"><label>Government ID Number</label><input id="s-govtid" placeholder="e.g. 1234 5678 9012" oninput="clearAvail('govtid')" onblur="checkAvail('govtid')"><div class="reg-avail-msg" id="avail-govtid"></div></div>
+          <div class="af"><label>Upload ID Photo/Scan (optional)</label><input type="file" id="reg-govtid-file" accept="image/*,.pdf" onchange="regUploadDoc(this,'govt_id','reg-govtid-status')"><div class="reg-upload-status" id="reg-govtid-status"></div></div>
+          <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 8px">Family Details (optional)</div>
+          <div style="display:flex;gap:8px">
+            <div class="af" style="flex:1"><label>Total Members</label><input id="s-fam-total" type="number" min="0" placeholder="e.g. 4"></div>
+            <div class="af" style="flex:1"><label>Male</label><input id="s-fam-male" type="number" min="0" placeholder="2"></div>
+            <div class="af" style="flex:1"><label>Female</label><input id="s-fam-female" type="number" min="0" placeholder="2"></div>
+          </div>
+          <div class="af"><label>Emergency Contact Name</label><input id="s-emergency-name" placeholder="Who to contact in an emergency"></div>
+          <div class="af"><label>Emergency Contact Phone</label><input id="s-emergency-phone" placeholder="10-digit mobile number"></div>
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="abtn" style="background:var(--dark3);border:1px solid rgba(255,255,255,.15)" onclick="regGoStep(2)">← Back</button>
+            <button class="abtn" onclick="regGoStep(4)">Continue →</button>
+          </div>
+        </div>
+
+        <!-- STEP 4: Driving Licence + Vehicle + Review -->
+        <div class="reg-step" id="reg-step-4" style="display:none">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:12px">Step 4 of 4 — Driving Licence & Vehicle (optional)</div>
+          <div class="af"><label>Driving Licence Number</label><input id="s-dl-number" placeholder="DL number"></div>
+          <div class="af"><label>Licence Expiry</label><input id="s-dl-expiry" type="date"></div>
+          <div class="af"><label>Upload Licence Photo</label><input type="file" id="reg-dl-file" accept="image/*,.pdf" onchange="regUploadDoc(this,'driving_licence','reg-dl-status')"><div class="reg-upload-status" id="reg-dl-status"></div></div>
+
+          <div style="font-size:11px;font-weight:800;color:var(--text2);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 8px">Vehicle (optional)</div>
+          <div class="af"><label>Registration Number</label><input id="s-veh-reg" placeholder="e.g. KA01AB1234" style="text-transform:uppercase" oninput="clearAvail('vehicle')" onblur="checkAvail('vehicle')"><div class="reg-avail-msg" id="avail-vehicle"></div></div>
+          <div style="display:flex;gap:8px">
+            <div class="af" style="flex:1"><label>Type</label><input id="s-veh-type" placeholder="Car / Bike"></div>
+            <div class="af" style="flex:1"><label>Manufacturer</label><input id="s-veh-make" placeholder="Honda"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="af" style="flex:1"><label>Model</label><input id="s-veh-model" placeholder="City"></div>
+            <div class="af" style="flex:1"><label>Year</label><input id="s-veh-year" type="number" placeholder="2021"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="af" style="flex:1"><label>Fuel Type</label><input id="s-veh-fuel" placeholder="Petrol"></div>
+            <div class="af" style="flex:1"><label>Colour</label><input id="s-veh-color" placeholder="White"></div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div class="af" style="flex:1"><label>Engine No.</label><input id="s-veh-engine" placeholder="Optional"></div>
+            <div class="af" style="flex:1"><label>Chassis No.</label><input id="s-veh-chassis" placeholder="Optional"></div>
+          </div>
+          <div class="af"><label>RC Upload</label><input type="file" id="reg-rc-file" accept="image/*,.pdf" onchange="regUploadDoc(this,'rc','reg-rc-status')"><div class="reg-upload-status" id="reg-rc-status"></div></div>
+          <div class="af"><label>Insurance Upload</label><input type="file" id="reg-ins-file" accept="image/*,.pdf" onchange="regUploadDoc(this,'insurance','reg-ins-status')"><div class="reg-upload-status" id="reg-ins-status"></div></div>
+          <div class="af"><label>PUC Upload</label><input type="file" id="reg-puc-file" accept="image/*,.pdf" onchange="regUploadDoc(this,'puc','reg-puc-status')"><div class="reg-upload-status" id="reg-puc-status"></div></div>
+          <div class="af"><label>Fitness Certificate Upload</label><input type="file" id="reg-fit-file" accept="image/*,.pdf" onchange="regUploadDoc(this,'fitness','reg-fit-status')"><div class="reg-upload-status" id="reg-fit-status"></div></div>
+
+          <div style="display:flex;gap:8px;margin-top:14px">
+            <button class="abtn" style="background:var(--dark3);border:1px solid rgba(255,255,255,.15)" onclick="regGoStep(3)">← Back</button>
+            <button class="abtn" onclick="doCitizenSignup()" id="reg-submit-btn">Complete Registration →</button>
+          </div>
+        </div>
+
+        <div class="ahint">You'll receive a permanent UrbanGuard ID and a one-time password</div>
+      </div>
+      <div id="citizen-id-result" style="display:none;margin-top:16px;background:#f0f7ff;border:1px solid #c5d9f9;border-radius:12px;padding:16px"></div>
+    </div>
+
+    <!-- TRAFFIC CONTROL PORTAL -->
+    <div id="portal-traffic" style="display:none">
+      <p style="font-size:12px;color:#5f6368;margin-bottom:16px">Official Traffic Control Room access only.</p>
+      <div class="af"><label>Username</label><input id="tc-user" placeholder="traffic123" value="traffic123"></div>
+      <div class="af"><label>Password</label><input id="tc-pass" type="password" placeholder="••••••••" value="traffic123"></div>
+      <button class="abtn" onclick="doPortalLogin('tc-user','tc-pass')">Access Control Room →</button>
+      <div class="ahint">Demo credentials pre-filled</div>
+    </div>
+
+    <!-- MEDICAL EMERGENCY PORTAL -->
+    <div id="portal-emergency" style="display:none">
+      <p style="font-size:12px;color:#5f6368;margin-bottom:16px">Medical Emergency Center — official operator access only.</p>
+      <div class="af"><label>Username</label><input id="em-user" placeholder="emergency123" value="emergency123"></div>
+      <div class="af"><label>Password</label><input id="em-pass" type="password" placeholder="••••••••" value="emergency123"></div>
+      <button class="abtn" onclick="doPortalLogin('em-user','em-pass')">Access Emergency Center →</button>
+      <div class="ahint">Demo credentials pre-filled</div>
+    </div>
+
+    <!-- MUNICIPALITY PORTAL -->
+    <div id="portal-municipality" style="display:none">
+      <p style="font-size:12px;color:#5f6368;margin-bottom:16px">Municipality officials — repair queue, budget, and infrastructure access only.</p>
+      <div class="af"><label>Username</label><input id="mu-user" placeholder="municipality123" value="municipality123"></div>
+      <div class="af"><label>Password</label><input id="mu-pass" type="password" placeholder="••••••••" value="municipality123"></div>
+      <button class="abtn" onclick="doPortalLogin('mu-user','mu-pass')">Access Municipality Console →</button>
+      <div class="ahint">Demo credentials pre-filled</div>
+    </div>
+
+    <!-- SUPER ADMIN PORTAL -->
+    <div id="portal-admin" style="display:none">
+      <p style="font-size:12px;color:#5f6368;margin-bottom:16px">Government / Super Admin access only.</p>
+      <div class="af"><label>Username</label><input id="ad-user" placeholder="admin123" value="admin123"></div>
+      <div class="af"><label>Password</label><input id="ad-pass" type="password" placeholder="••••••••" value="admin123"></div>
+      <button class="abtn" onclick="doPortalLogin('ad-user','ad-pass')">Access Admin Console →</button>
+      <div class="ahint">Demo credentials pre-filled</div>
+    </div>
+  </div>
+</div>
+
+<!-- FORCED PASSWORD CHANGE -->
+<div class="modal-bg" id="pwmodal" style="z-index: 99999;">
+  <div class="mcard" style="width:420px">
+    <div class="mhdr">🔒 Set a New Password</div>
+    <div class="mbody">
+      <p style="font-size:13px;color:#5f6368;margin-bottom:14px">This is your first login. For security, set a permanent password before continuing.</p>
+      <div class="af"><label>Current (temporary) password</label><input id="pw-current" type="password" class="spinp" style="margin:6px 0 0"></div>
+      <div class="af"><label>New password (min 8 characters)</label><input id="pw-new" type="password" class="spinp" style="margin:6px 0 0"></div>
+      <div id="pw-err" style="color:#c5221f;font-size:12px;display:none;margin-top:6px"></div>
+    </div>
+    <div class="mfooter">
+      <button class="mbtn-ok" style="width:100%" onclick="submitPasswordChange()">Set Password &amp; Continue</button>
+    </div>
+  </div>
+</div>
+
+<div id="OPS">
+  <div class="ops-sidebar" id="ops-sidebar">
+    <div class="ops-brand">
+      <div class="ops-brand-eyebrow" id="ops-eyebrow">UrbanGuard AI</div>
+      <div class="ops-brand-title" id="ops-title">Command Center</div>
+      <div class="ops-brand-sub" id="ops-sub"></div>
+    </div>
+    <div class="ops-nav" id="ops-nav"></div>
+    <div class="ops-sidebar-foot">
+      <div class="ops-user">
+        <div class="ops-user-av" id="ops-av"></div>
+        <div style="min-width:0">
+          <div class="ops-user-name" id="ops-uname"></div>
+          <div class="ops-user-role" id="ops-urole"></div>
+        </div>
+      </div>
+      <button class="ops-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+  <div class="ops-main">
+    <div class="ops-topbar">
+      <div class="ops-topbar-title" id="ops-section-title">Overview</div>
+      <div class="ops-topbar-right">
+        <span><span class="ops-live-dot"></span>Live</span>
+        <span id="ops-clock"></span>
+        <button class="rbn" style="width:32px;height:32px;font-size:13px" onclick="document.getElementById('ops-sidebar').classList.toggle('show')">☰</button>
+      </div>
+    </div>
+    <div class="ops-body" id="ops-body"><div class="ops-loading">Loading…</div></div>
+  </div>
+</div>
+
+<div id="APP">
+  <div id="map"></div>
+
+  <div class="topbar">
+    <div class="scard" id="scard">
+      <div class="smainrow">
+        <div class="sbrand"><div class="sbicon"><svg viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>UrbanAI</div>
+        <div class="sdiv2"></div>
+        <input class="sinp" id="sinp" placeholder="Search city, address, pincode..." autocomplete="off"
+          oninput="onSrch(this,'main')" onfocus="onFoc('main')" onblur="onBlr('main')">
+        <button class="sclearbtn" id="sclear" onclick="clearS()">×</button>
+        <button class="sdirbtn" onclick="toggleDir()">
+          <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5M2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          Directions
+        </button>
+      </div>
+      <div class="sft" id="sft">
+        <div class="sftrow">
+          <div class="sftdot" style="border-color:var(--blue);background:var(--blue)"></div>
+          <input class="sftinp" id="from-inp" placeholder="From: city, address or click map" autocomplete="off"
+            oninput="onSrch(this,'from')" onfocus="onFoc('from')" onblur="onBlr('from')">
+        </div>
+        <div class="sftrow">
+          <div class="sftdot" style="border-color:var(--red);background:var(--red)"></div>
+          <input class="sftinp" id="to-inp" placeholder="To: destination" autocomplete="off"
+            oninput="onSrch(this,'to')" onfocus="onFoc('to')" onblur="onBlr('to')">
+          <button class="sswap" onclick="swapDir()">⇅</button>
+        </div>
+        <button class="sgo" id="sgo" onclick="doRoute()">
+          <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+          <span id="sgo-txt">Find Routes & Predict Traffic</span>
+        </button>
+      </div>
+      <div class="sdrop" id="dd-main"></div>
+      <div class="sdrop" id="dd-from"></div>
+      <div class="sdrop" id="dd-to"></div>
+    </div>
+
+    <div class="rbns">
+      <button class="rbn" onclick="openProfile()" title="My Profile">👤</button>
+      <button class="rbn" id="notif-btn" onclick="toggleNotifs()" title="Notifications" style="position:relative">🔔<span id="notif-badge" style="display:none;position:absolute;top:-3px;right:-3px;background:#EA4335;color:#fff;font-size:9px;font-weight:800;border-radius:50%;width:16px;height:16px;align-items:center;justify-content:center"></span></button>
+      <button class="rbn" id="cc-btn" onclick="toggleCC()" title="Command Center">🏛️</button>
+      <button class="rbn" id="ai-btn" onclick="toggleAI()" title="AI Assistant">🤖</button>
+      <button class="rbn" onclick="toggleDB()" title="Database Admin">🗄️</button>
+      <button class="rbn" onclick="openSettings()" title="Settings">⚙️</button>
+      <button class="rbn" onclick="locateMe()" title="My Location">📍</button>
+      <button class="rbn" onclick="openReport()" title="Report Traffic">🚨</button>
+    </div>
+  </div>
+
+  <div class="dbpanel" id="notifpanel" style="width:380px;max-height:480px">
+    <div class="dbhdr">
+      <div class="dbt">🔔 Notifications</div>
+      <button class="dbclose" onclick="toggleNotifs()">×</button>
+    </div>
+    <div class="dbbody" id="notif-body" style="padding:10px"></div>
+  </div>
+
+  <div class="dbpanel" id="ccpanel" style="width:760px;max-height:560px">
+    <div class="dbhdr">
+      <div class="dbt">🏛️ Command Center</div>
+      <div class="dbtabs" id="cc-tabs"></div>
+      <button class="dbclose" onclick="toggleCC()">×</button>
+    </div>
+    <div class="dbbody" id="cc-body" style="padding:16px"></div>
+  </div>
+
+  <div class="navbar" id="navbar">
+    <div class="navtop">
+      <div class="navtitle">🧭 Live Navigation</div>
+      <div class="navstatus">ACTIVE</div>
+    </div>
+    <div class="navstats">
+      <div class="navstat"><div class="navstat-val" id="nav-spd">0</div><div class="navstat-lbl">km/h</div></div>
+      <div class="navstat"><div class="navstat-val" id="nav-eta">--</div><div class="navstat-lbl">ETA</div></div>
+      <div class="navstat"><div class="navstat-val" id="nav-dist">--</div><div class="navstat-lbl">Remaining</div></div>
+    </div>
+    <div class="navctrls">
+      <button class="nbtn nbtn-gps" onclick="startRealGPS()">📡 Real GPS</button>
+      <button class="nbtn nbtn-sim" onclick="startSimNav()">▶ Simulate</button>
+      <!-- Dedicated On-Demand Route Update Button -->
+      <button class="nbtn" style="background:var(--blue);color:white;" onclick="showLivePop()">📊 Route Update</button>
+      <button class="nbtn nbtn-stop" onclick="stopNav()">⏹ Stop</button>
+    </div>
+  </div>
+
+  <div class="dir-ui" id="dir-ui">
+    <div class="dir-icon" id="dir-icon">⬆️</div>
+    <div id="dir-text">Continue straight</div>
+  </div>
+
+  <div class="livepop" id="livepop">
+    <div class="livepop-hdr">
+      <div class="livepop-title"><span>🔴</span> Live Route Update <span id="lp-ws-badge" style="font-size:9px;color:#34A853;margin-left:6px">● LIVE</span></div>
+      <button class="livepop-close" onclick="closeLivePop()">×</button>
+    </div>
+    <div class="lpgrid">
+      <div class="lpbox"><div class="lpbox-val" id="lp-temp">--</div><div class="lpbox-lbl">Temperature</div></div>
+      <div class="lpbox"><div class="lpbox-val" id="lp-weather">--</div><div class="lpbox-lbl">Weather</div></div>
+      <div class="lpbox"><div class="lpbox-val" id="lp-moist">--</div><div class="lpbox-lbl">Moisture</div></div>
+      <div class="lpbox"><div class="lpbox-val" id="lp-aqi">--</div><div class="lpbox-lbl">AQI</div></div>
+      <div class="lpbox"><div class="lpbox-val" id="lp-cg">--</div><div class="lpbox-lbl">Congestion</div></div>
+      <div class="lpbox"><div class="lpbox-val" id="lp-flow">--</div><div class="lpbox-lbl">Veh/hr</div></div>
+    </div>
+    <div class="lpnews" id="lp-news">Loading latest news...</div>
+    <div class="lpml" id="lp-ml">🤖 ML Prediction: Analyzing patterns...</div>
+  </div>
+
+  <div class="spanel">
+    <div class="rpanel" id="rpanel">
+      <div class="rphdr">
+        <div class="rptitle" id="rptitle">Routes</div>
+        <div style="background:#e8f0fe;border-radius:8px;padding:2px 7px;font-size:10px;font-weight:800;color:var(--blue)">ML ACTIVE</div>
+        <button class="rpclose" onclick="closeRP()">×</button>
+      </div>
+      <div class="rptabs">
+        <div class="rptab on" onclick="rpTab(this,'routes')">Routes</div>
+        <div class="rptab" onclick="rpTab(this,'preds')">Predictions</div>
+        <div class="rptab" onclick="rpTab(this,'details')">Details</div>
+      </div>
+      <div class="rpcontent" id="rpc-routes"></div>
+      <div class="rpcontent" id="rpc-preds" style="display:none"></div>
+      <div class="rpcontent" id="rpc-details" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="tmodal">
+    <div class="mcard">
+      <div class="mhdr">🚀 Choose Your Transport Mode</div>
+      <div class="mbody">
+        <div style="text-align:center;color:#5f6368;font-size:13px;margin-bottom:12px">Select how you want to travel — AI calculates exact time & cost per mode</div>
+        <div class="tgrid" id="tgrid"></div>
+      </div>
+      <div class="mfooter">
+        <button class="mbtn-cancel" onclick="closeTModal()">Cancel</button>
+        <button class="mbtn-ok" onclick="confirmMode()">Start with this Mode →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="aipanel" id="aipanel">
+    <div class="aihdr">
+      <div class="aiav"><svg viewBox="0 0 24 24" stroke="white" stroke-width="2" fill="none"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg></div>
+      <div><div class="ait">UrbanAI Assistant</div><div class="aistat"><div class="aistatd"></div>Online · Backend-powered</div></div>
+      <button class="aiclose" onclick="toggleAI()">×</button>
+    </div>
+    <div class="apirow">
+      <div class="apilbl">Assistant mode</div>
+      <div class="apinote">Uses the server's local expert engine by default.</div>
+    </div>
+    <div class="chatmsgs" id="chatmsgs"></div>
+    <div class="qqrow" id="qqrow"></div>
+    <div class="chatinprow">
+      <input class="chatinp" id="chatinp" placeholder="Ask about traffic, cities, routes, anything..." onkeydown="if(event.key==='Enter')sendMsg()">
+      <button class="chatsend" onclick="sendMsg()"><svg viewBox="0 0 24 24"><path d="M22 2L11 13M22 2L15 22 11 13 2 9l20-7z"/></svg></button>
+    </div>
+  </div>
+
+  <div class="dbpanel" id="dbpanel">
+    <div class="dbhdr">
+      <div class="dbt">🗄️ Traffic Database <span style="font-size:9px;color:#34A853;font-weight:800">LIVE FROM API</span></div>
+      <div class="dbtabs">
+        <button class="dbtab on" onclick="dbTab(this,'records')">Records</button>
+        <button class="dbtab" onclick="dbTab(this,'sensors')">Sensors</button>
+        <button class="dbtab" onclick="dbTab(this,'incidents')">Incidents</button>
+        <button class="dbtab" onclick="dbTab(this,'reports')">Reports</button>
+      </div>
+      <button class="dbclose" onclick="toggleDB()">×</button>
+    </div>
+    <div class="dbbody"><table class="dbtable" id="dbtbl"></table><div id="dbstat" style="font-size:10px;color:#9aa0a6;margin-top:7px"></div></div>
+  </div>
+
+  <div class="overlay-bg" id="ovl" onclick="closeAll()"></div>
+  <div class="sett-panel" id="settingspanel">
+    <div class="sphdr"><div class="sptitle">⚙️ Settings</div><button class="spclose" onclick="closeAll()">×</button></div>
+    <div class="spbody">
+      <div class="spsec">
+        <div class="spsec-t">Backend Connection</div>
+        <p style="font-size:12px;color:#5f6368;line-height:1.6">API base URL used by this app.</p>
+        <input class="spinp" id="apibase" type="text" placeholder="http://localhost:8000">
+        <button class="spbtn" onclick="applyApiBase()">Save API URL</button>
+      </div>
+      <div class="spsec">
+        <div class="spsec-t">Google Maps API (optional)</div>
+        <p style="font-size:12px;color:#5f6368;line-height:1.6">Enter your Google Maps API key to replace OpenStreetMap with real Google Maps + live traffic layer.</p>
+        <input class="spinp" id="gmkey" type="text" placeholder="AIzaSy...">
+        <button class="spbtn" onclick="applyGM()">Apply Google Maps Key</button>
+      </div>
+      <div class="spsec">
+        <div class="spsec-t">ML Model Settings</div>
+        <div class="sprow"><div><div class="sp-lbl">Model Architecture</div><div class="sp-sub">LSTM + Random Forest ensemble (server-side)</div></div><select style="font-size:12px;border:1px solid #e8eaed;border-radius:7px;padding:5px 9px;outline:none"><option>LSTM + Random Forest</option><option>XGBoost</option><option>Transformer</option></select></div>
+        <div class="sprow"><div><div class="sp-lbl">Auto-Retrain</div><div class="sp-sub">Weekly model updates</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+        <div class="sprow"><div><div class="sp-lbl">Congestion Alerts</div></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+      </div>
+      <div class="spsec">
+        <div class="spsec-t">Account</div>
+        <div class="sprow"><div><div class="sp-lbl" id="sp-name">Admin User</div><div class="sp-sub" id="sp-email">admin@trafficai.pro</div></div><div style="font-size:11px;color:var(--blue);font-weight:800" id="sp-role">Admin</div></div>
+        <button onclick="doLogout()" style="display:block;width:100%;padding:10px;background:#fce8e6;border:none;border-radius:8px;color:#c5221f;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--f);margin-top:12px">Sign Out</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE PANEL -->
+  <div class="rpt-panel" id="profilepanel" style="max-height:88vh">
+    <div class="sphdr"><div class="sptitle">👤 My Profile</div><button class="spclose" onclick="closeAll()">×</button></div>
+    <div class="rptabs" style="flex-shrink:0">
+      <div class="rptab on" onclick="profTab('details', this)">My Details</div>
+      <div class="rptab" onclick="profTab('vehicles', this)">My Vehicles</div>
+    </div>
+    <div class="spbody" style="overflow-y:auto">
+      <div id="prof-details">
+        <div class="af"><label>Full Name</label><input id="prof-name" class="spinp" readonly style="background:#f8f9fa;color:#5f6368"></div>
+        <div class="af"><label>UrbanGuard ID</label><input id="prof-id" class="spinp" readonly style="background:#f8f9fa;color:#5f6368"></div>
+        <div class="af"><label>Mobile</label><input id="prof-mobile" class="spinp" readonly style="background:#f8f9fa;color:#5f6368"></div>
+        <div class="af"><label>Email</label><input id="prof-email" class="spinp" readonly style="background:#f8f9fa;color:#5f6368"></div>
+        <div class="af"><label>Role</label><input id="prof-role" class="spinp" readonly style="background:#f8f9fa;color:#5f6368"></div>
+        <div style="font-size:11px;color:#9aa0a6;margin-top:10px">Profile details are verified and cannot be changed here.</div>
+      </div>
+      <div id="prof-vehicles" style="display:none">
+        <div id="veh-list" style="margin-bottom: 16px;"></div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;border-top:1px solid #eee;padding-top:12px">➕ Add New Vehicle</div>
+        <div class="af"><label>Registration Number</label><input id="v-reg" class="spinp" placeholder="e.g. KA01AB1234" style="text-transform:uppercase"></div>
+        <div style="display:flex;gap:8px">
+          <div class="af" style="flex:1"><label>Type</label><input id="v-type" class="spinp" placeholder="Car / Bike"></div>
+          <div class="af" style="flex:1"><label>Make</label><input id="v-make" class="spinp" placeholder="e.g. Honda"></div>
+        </div>
+        <div style="display:flex;gap:8px">
+          <div class="af" style="flex:1"><label>Model</label><input id="v-model" class="spinp" placeholder="e.g. City"></div>
+          <div class="af" style="flex:1"><label>Fuel Type</label><input id="v-fuel" class="spinp" placeholder="Petrol / EV"></div>
+        </div>
+        <button class="mbtn-ok" style="width:100%;margin-top:10px;padding:12px" onclick="addNewVehicle()">Save Vehicle to Garage</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="rpt-panel" id="rptpanel" style="max-height:88vh">
+    <div class="sphdr"><div class="sptitle">🚨 Report an Issue</div><button class="spclose" onclick="closeAll()">×</button></div>
+    <div class="rptabs" style="flex-shrink:0">
+      <div class="rptab on" onclick="rptModeTab('traffic',this)">Traffic Condition</div>
+      <div class="rptab" onclick="rptModeTab('infra',this)">Infrastructure Issue</div>
+    </div>
+    <div class="spbody" style="overflow-y:auto">
+      <div id="rpt-mode-traffic">
+        <p style="font-size:13px;color:#5f6368;margin-bottom:14px">Help the community by reporting real-time conditions near you.</p>
+        <div class="rpt-opts">
+          <div class="rpt-opt" onclick="selRptLvl('Free Flow',this)">🟢 Free Flow</div>
+          <div class="rpt-opt" onclick="selRptLvl('Moderate',this)">🟡 Moderate</div>
+          <div class="rpt-opt" onclick="selRptLvl('Heavy',this)">🔴 Heavy</div>
+        </div>
+        <textarea class="rpt-ta" id="rpt-note" placeholder="Details: accident, flooding, road work, event nearby..."></textarea>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#333;margin:-4px 0 12px;cursor:pointer">
+          <input type="checkbox" id="rpt-is-accident" onchange="toggleAccidentTriage()"> This report involves a road accident
+        </label>
+        <div id="rpt-triage" style="display:none;background:#fdf3f2;border:1px solid #f3c6c1;border-radius:10px;padding:12px;margin-bottom:12px">
+          <div style="font-size:11px;font-weight:800;color:#c5221f;text-transform:uppercase;margin-bottom:8px">Emergency Triage</div>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="rpt-injured"> Are people injured?</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;margin-bottom:6px;cursor:pointer"><input type="checkbox" id="rpt-ambulance"> Is an ambulance required?</label>
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer"><input type="checkbox" id="rpt-blocked"> Is the road blocked?</label>
+        </div>
+        <div id="rpt-firstaid" style="display:none;background:#e6f4ea;border:1px solid #b7dfc2;border-radius:10px;padding:12px;margin-bottom:12px;font-size:12px;color:#137333;line-height:1.6"></div>
+        <div style="display:flex;gap:10px">
+          <button class="mbtn-cancel" style="flex:1;padding:13px" onclick="closeAll()">Cancel</button>
+          <button class="mbtn-ok" style="flex:1;padding:13px" onclick="submitReport()">Submit Report ✓</button>
+        </div>
+      </div>
+
+      <div id="rpt-mode-infra" style="display:none">
+        <p style="font-size:13px;color:#5f6368;margin-bottom:12px">Spotted an infrastructure issue? Report it with an exact location and photo.</p>
+        <div class="af"><label>Issue Type</label>
+          <select id="infra-category" class="spinp" style="margin:6px 0 0">
+            <option>Pothole</option><option>Road Crack</option><option>Road Collapse</option>
+            <option>Broken Traffic Signal</option><option>Broken Streetlight</option>
+            <option>Water Leakage</option><option>Drainage Blockage</option>
+            <option>Fallen Tree</option><option>Bridge Damage</option>
+            <option>Garbage Overflow</option><option>Illegal Road Obstruction</option><option>Other</option>
+          </select>
+        </div>
+        <div class="af"><label>Location</label>
+          <div style="display:flex;gap:8px;margin-top:6px">
+            <button class="mbtn-cancel" style="flex:1;padding:9px;font-size:12px" onclick="infraUseGPS()">📍 Use My Location</button>
+            <button class="mbtn-cancel" style="flex:1;padding:9px;font-size:12px" onclick="infraPinOnMap()">📌 Pin on Map</button>
+          </div>
+          <div id="infra-location-result" style="font-size:12px;color:#5f6368;margin-top:8px"></div>
+        </div>
+        <div id="infra-recurrence" style="display:none;background:#fef7e0;border:1px solid #fde293;border-radius:8px;padding:8px 10px;font-size:12px;color:#8a6d00;margin:8px 0"></div>
+        <div class="af"><label>Photo (optional)</label>
+          <input type="file" id="infra-photo" accept="image/*" style="margin-top:6px" onchange="infraPhotoPreview()">
+          <img id="infra-photo-preview" style="display:none;max-width:100%;border-radius:8px;margin-top:8px;max-height:160px;object-fit:cover">
+        </div>
+        <textarea class="rpt-ta" id="infra-note" placeholder="Additional details (optional)" style="margin-top:10px"></textarea>
+        <div style="display:flex;gap:10px;margin-top:10px">
+          <button class="mbtn-cancel" style="flex:1;padding:13px" onclick="closeAll()">Cancel</button>
+          <button class="mbtn-ok" style="flex:1;padding:13px" onclick="submitInfraReport()">Submit Report ✓</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAP LAYER TOGGLE UI -->
+  <div class="layer-toggle-btn" onclick="document.getElementById('map-layer-menu').classList.toggle('show')">🗺️ Map Layers</div>
+  <div class="map-layer-menu" id="map-layer-menu">
+    <div class="ml-item active" id="btn-osm" onclick="switchMapEngine('osm')">🌍 OpenStreetMap (Free)</div>
+    <div class="ml-item" id="btn-google" onclick="switchMapEngine('google')">📍 Google Maps (Premium)</div>
+    <div class="ml-item" style="border-top: 1px solid #eee; margin-top: 4px;" onclick="toggleGoogleTraffic()">
+      <input type="checkbox" id="g-traffic-check" disabled style="pointer-events:none"> Live Traffic Layer
+    </div>
+  </div>
+
+  <div class="mapleg">
+    <div class="mli"><div class="mll" style="background:var(--green)"></div>Free</div>
+    <div class="mli"><div class="mll" style="background:var(--yellow)"></div>Moderate</div>
+    <div class="mli"><div class="mll" style="background:var(--red)"></div>Congested</div>
+    <div class="mli"><div style="width:11px;height:11px;border-radius:50%;background:var(--green);border:2px solid rgba(0,0,0,.3)"></div>Signal / Sensor</div>
+  </div>
+  <div class="mapctrls" style="position:absolute;right:12px;bottom:56px;display:flex;flex-direction:column;gap:8px;z-index:10">
+    <button class="rbn" onclick="recenterMap()" title="Recenter on my location">🎯</button>
+    <button class="rbn" id="compass-btn" onclick="resetBearing()" title="Reset map orientation to North" style="transition:transform .3s"><span id="compass-arrow">🧭</span></button>
+  </div>
+  <div class="msbar"><div class="msdot"></div><span id="mstext">UrbanAI · FastAPI backend + OpenStreetMap/OSRM · ML Active</span><span style="margin-left:auto;color:#9aa0a6;font-size:10px" id="mstime"></span></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+<script src="js/register-wizard.js"></script>
+<script src="js/commandcenter.js"></script>
+<script src="js/ops-dashboard.js"></script>
+</body>
+</html>
